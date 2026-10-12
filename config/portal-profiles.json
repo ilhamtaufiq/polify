@@ -1,0 +1,43 @@
+{
+  "profiles": {
+    "amdalnet": {
+      "label": "Amdalnet",
+      "container": "zip",
+      "requiredExtensions": ["shp", "dbf", "shx", "prj", "cpg"],
+      "crs": "EPSG:4326",
+      "encoding": "UTF-8",
+      "flatStructure": true,
+      "maxFileSizeMB": null,
+      "maxFeatures": null,
+      "_todo": "Daftar lima ekstensi berasal dari juknis penyiapan peta Amdalnet. flatStructure: TODO verifikasi ke juknis Amdalnet terbaru."
+    },
+    "oss_rba": {
+      "label": "OSS RBA",
+      "container": "zip",
+      "requiredExtensions": ["shp", "dbf", "shx", "prj"],
+      "crs": "EPSG:4326",
+      "encoding": "UTF-8",
+      "flatStructure": true,
+      "maxFileSizeMB": null,
+      "maxFeatures": null,
+      "_todo": "TODO verifikasi ke panduan OSS RBA terbaru: requiredExtensions, crs, encoding, flatStructure, maxFileSizeMB, maxFeatures. Nilai null berarti belum diketahui dan TIDAK diberlakukan."
+    },
+    "combined": {
+      "label": "Amdalnet + OSS RBA (disarankan)",
+      "strategy": "strictest-common",
+      "includes": ["amdalnet", "oss_rba"]
+    }
+  },
+  "wilayahIndonesia": {
+    "minLon": 94.0,
+    "maxLon": 142.0,
+    "minLat": -12.0,
+    "maxLat": 7.0,
+    "_catatan": "Kotak pembatas longgar untuk mendeteksi titik di luar Indonesia dan lintang/bujur yang tertukar."
+  },
+  "heuristik": {
+    "minAreaM2": 1.0,
+    "areaWarnHa": 2000,
+    "_catatan": "Heuristik internal Polify, bukan aturan resmi portal mana pun."
+  }
+}

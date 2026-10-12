@@ -1,0 +1,16 @@
+# Rust
+target/
+
+# Node / Astro
+node_modules/
+dist/
+.astro/
+apps/web/.env*.local
+
+# Build keluaran WASM
+crates/polify-wasm/pkg/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
