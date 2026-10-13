@@ -1,0 +1,125 @@
+---
+import Base from "../layouts/Base.astro";
+
+const description =
+  "Izin usaha tersendat di berkas? Kami bantu NIB, KKPR, persetujuan lingkungan, dan PBG di Kabupaten Cianjur, termasuk SHP lahan untuk OSS RBA dan Amdalnet.";
+
+const waNumber = "6285722224769";
+const waDisplay = "+62 857-2222-4769";
+const waMessage = "Halo, saya ingin konsultasi perizinan berusaha di Kabupaten Cianjur.";
+const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`;
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Polify", item: "/" },
+      { "@type": "ListItem", position: 2, name: "Layanan konsultasi", item: "/layanan" },
+    ],
+  },
+];
+
+const services = [
+  {
+    title: "NIB dan OSS RBA",
+    hook: "Mulai usaha dengan data yang benar sejak awal.",
+    text: "Kami bantu pengisian OSS RBA sampai nomor induk berusaha terbit.",
+  },
+  {
+    title: "Persetujuan KKPR",
+    hook: "Pastikan lokasi sesuai tata ruang sebelum Anda membangun.",
+    text: "Kami siapkan SHP polygon lahan dan berkas pendukungnya untuk pengajuan.",
+  },
+  {
+    title: "Persetujuan lingkungan",
+    hook: "Dokumen sesuai skala usaha, tanpa revisi yang tidak perlu.",
+    text: "UKL-UPL, SPPL, atau Amdal, kami dampingi dari penyusunan sampai pengajuan.",
+  },
+  {
+    title: "PBG dan SLF",
+    hook: "Bangunan usaha siap dipakai, dengan izin yang lengkap.",
+    text: "Kami dampingi persetujuan bangunan gedung dan sertifikat laik fungsi.",
+  },
+];
+
+const steps = [
+  { title: "Ceritakan usaha Anda", text: "Kirim jenis usaha dan lokasi lahan lewat WhatsApp. Cukup itu dulu." },
+  { title: "Kami tentukan izinnya", text: "Kami cek izin apa saja yang dibutuhkan dan dokumen apa yang perlu disiapkan." },
+  { title: "Berkas kami dampingi", text: "Dari penyiapan SHP dan dokumen sampai pengajuan di sistem yang berwenang." },
+];
+---
+
+<Base
+  title="Konsultasi Perizinan Usaha Cianjur: NIB, KKPR, Lingkungan | Polify"
+  description={description}
+  jsonLd={jsonLd}
+>
+  <header class="page-head">
+    <p class="eyebrow">Perizinan usaha · Kabupaten Cianjur</p>
+    <h1>Izin usaha tersendat di berkas? Kami bantu dari awal sampai terkirim.</h1>
+    <p class="lead">
+      Satu pintu untuk NIB, KKPR, persetujuan lingkungan, dan bangunan di Cianjur. Kami cek kebutuhan
+      izin Anda, siapkan SHP lahan, lalu dampingi pengajuan di OSS RBA dan Amdalnet.
+    </p>
+    <div class="actions">
+      <a class="cta" href={waLink} target="_blank" rel="noopener noreferrer">Konsultasi via WhatsApp</a>
+      <a class="text-link" href="/editor">Coba buat SHP lahan dulu</a>
+    </div>
+    <p class="note">Nomor WhatsApp: {waDisplay}</p>
+  </header>
+
+  <section class="block">
+    <h2>Yang kami bantu urus</h2>
+    <div class="cards">
+      {services.map((s) => (
+        <article class="card">
+          <h3>{s.title}</h3>
+          <p class="card-hook">{s.hook}</p>
+          <p>{s.text}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Tiga langkah, dari chat pertama sampai berkas terkirim</h2>
+    <ol class="steps">
+      {steps.map((s) => (
+        <li>
+          <strong>{s.title}</strong>
+          <p>{s.text}</p>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <section class="closing">
+    <h2>Belum tahu izin apa yang Anda butuhkan?</h2>
+    <p>Ceritakan saja usahanya. Kami yang tentukan langkah berikutnya.</p>
+    <a class="cta" href={waLink} target="_blank" rel="noopener noreferrer">Chat sekarang di WhatsApp</a>
+    <p class="note">
+      Polify tidak berafiliasi dengan OSS RBA, Amdalnet, KLHK, atau ATR/BPN. Keputusan akhir ada pada
+      sistem dan instansi yang berwenang.
+    </p>
+  </section>
+
+  <style>
+    .cards { display: grid; gap: 14px; margin-top: 12px; }
+    .card {
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      box-shadow: var(--shadow);
+    }
+    .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+    .card-hook { margin: 0 0 6px; font-weight: 700; color: var(--brand); }
+    .card p { margin: 0; }
+    .steps { margin: 12px 0 0; padding-left: 1.25rem; display: grid; gap: 12px; }
+    .steps p { margin: 2px 0 0; }
+    @media (min-width: 640px) {
+      .cards { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</Base>
