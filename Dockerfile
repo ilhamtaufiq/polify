@@ -7,6 +7,8 @@ RUN rustup target add wasm32-unknown-unknown \
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
+# polify-core memuat config/portal-profiles.json lewat include_str!
+COPY config ./config
 RUN cd crates/polify-wasm && wasm-pack build --target web --release
 
 # ---- Tahap 2: bangun situs statis (Astro) ----
