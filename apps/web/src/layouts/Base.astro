@@ -86,6 +86,7 @@ const baseLd = [
         <small>Cianjur</small>
       </a>
       <nav aria-label="Utama">
+        <a href="/layanan">Layanan</a>
         <a href="/impor">Impor & cek</a>
         <a href="/editor" class="nav-cta">Buat SHP</a>
       </nav>
@@ -123,5 +124,64 @@ const baseLd = [
       </div>
       <p class="note" style="text-align:center;padding:0 20px 24px;margin:0">© {year} Polify</p>
     </footer>
+    <div class="cookie-banner" id="cookie-banner" role="region" aria-label="Pemberitahuan cookie" hidden>
+      <p>
+        Polify memakai cookie dan penyimpanan lokal untuk fungsi dasar situs. Peta dan font dimuat dari
+        pihak ketiga (OpenStreetMap dan Google Fonts). Data lahan Anda tetap diproses di browser dan tidak
+        dikirim ke server kami.
+      </p>
+      <div class="cookie-actions">
+        <button type="button" id="cookie-necessary" class="btn-ghost">Hanya yang perlu</button>
+        <button type="button" id="cookie-accept">Terima semua</button>
+      </div>
+    </div>
+
+    <script>
+      const KEY = "polify:cookie-consent";
+      const banner = document.getElementById("cookie-banner") as HTMLDivElement;
+
+      const save = (choice: "all" | "necessary") => {
+        try {
+          localStorage.setItem(KEY, choice);
+        } catch {
+          // Penyimpanan diblokir (mode privat): banner tetap ditutup untuk sesi ini.
+        }
+        banner.hidden = true;
+      };
+
+      let saved: string | null = null;
+      try {
+        saved = localStorage.getItem(KEY);
+      } catch {
+        saved = null;
+      }
+      banner.hidden = saved !== null;
+
+      document.getElementById("cookie-accept")!.addEventListener("click", () => save("all"));
+      document.getElementById("cookie-necessary")!.addEventListener("click", () => save("necessary"));
+    </script>
+
+    <style>
+      .cookie-banner {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        z-index: 1000;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 16px 18px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg);
+        box-shadow: var(--shadow-lg);
+      }
+      .cookie-banner[hidden] { display: none; }
+      .cookie-banner p { margin: 0 0 12px; font-size: 0.92rem; color: var(--muted); }
+      .cookie-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+      @media (min-width: 640px) {
+        .cookie-banner { left: auto; right: 20px; bottom: 20px; margin: 0; }
+      }
+    </style>
   </body>
 </html>
