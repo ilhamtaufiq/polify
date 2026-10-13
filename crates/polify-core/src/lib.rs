@@ -7,6 +7,7 @@ pub mod coords;
 pub mod dbf;
 pub mod export;
 pub mod geo;
+pub mod import;
 pub mod profiles;
 pub mod shp;
 pub mod utm;

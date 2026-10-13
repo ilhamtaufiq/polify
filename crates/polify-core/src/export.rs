@@ -22,11 +22,17 @@ const MAX_BASENAME_LEN: usize = 32;
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Atribut {
-    pub nama: String,
-    pub alamat: String,
-    pub kode_kbli: String,
+    /// Nama pemrakarsa, mengisi kolom PEMRAKARSA.
+    pub pemrakarsa: String,
+    /// Nama kegiatan, mengisi kolom KEGIATAN.
+    pub kegiatan: String,
     pub tahun: u16,
+    pub provinsi: String,
+    pub keterangan: String,
 }
+
+/// Nilai tetap kolom LAYER pada layout Amdalnet (juknis Amdalnet, halaman 16).
+pub const LAYER_TAPAK_PROYEK: &str = "Tapak Proyek";
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -78,7 +84,8 @@ pub fn export_zip(
     cfg: &PortalsConfig,
     profile: &ResolvedProfile,
 ) -> Result<ExportOutput, ExportError> {
-    let basename = sanitize_basename(&req.basename);
+    // Layout Amdalnet mensyaratkan nama berkas huruf kapital semua (juknis, halaman 16).
+    let basename = sanitize_basename(&req.basename).to_uppercase();
 
     let fixed = validate::autofix_ring(&req.ring, cfg);
     let validation = validate::validate_ring(&fixed.ring, cfg);
@@ -87,7 +94,7 @@ pub fn export_zip(
     }
 
     let shp_out = shp::write_polygons(std::slice::from_ref(&fixed.ring))?;
-    let dbf_bytes = dbf::write_dbf(&dbf_fields(), &[dbf_row(req, validation.area_ha)])?;
+    let dbf_bytes = dbf::write_dbf(&dbf_fields(), &[dbf_row(req)])?;
 
     let entries = vec![
         ZipEntry {
@@ -154,43 +161,38 @@ pub fn sanitize_basename(raw: &str) -> String {
     }
 }
 
+/// Layout tabel atribut yang sama untuk OSS RBA dan Amdalnet: id, PEMRAKARSA, KEGIATAN,
+/// TAHUN, PROVINSI, KETERANGAN, LAYER. Semua teks kecuali id, sesuai juknis Amdalnet.
 fn dbf_fields() -> Vec<DbfField> {
+    let text = |name: &str| DbfField {
+        name: name.into(),
+        kind: FieldKind::Character,
+        length: 255,
+    };
     vec![
         DbfField {
-            name: "NAMA".into(),
-            kind: FieldKind::Character,
-            length: 80,
-        },
-        DbfField {
-            name: "ALAMAT".into(),
-            kind: FieldKind::Character,
-            length: 120,
-        },
-        DbfField {
-            name: "LUAS_HA".into(),
-            kind: FieldKind::Numeric { decimals: 4 },
-            length: 12,
-        },
-        DbfField {
-            name: "KODE_KBLI".into(),
-            kind: FieldKind::Character,
-            length: 12,
-        },
-        DbfField {
-            name: "TAHUN".into(),
+            name: "ID".into(),
             kind: FieldKind::Numeric { decimals: 0 },
-            length: 4,
+            length: 10,
         },
+        text("PEMRAKARSA"),
+        text("KEGIATAN"),
+        text("TAHUN"),
+        text("PROVINSI"),
+        text("KETERANGAN"),
+        text("LAYER"),
     ]
 }
 
-fn dbf_row(req: &ExportRequest, area_ha: f64) -> Vec<DbfValue> {
+fn dbf_row(req: &ExportRequest) -> Vec<DbfValue> {
     vec![
-        DbfValue::Text(req.atribut.nama.clone()),
-        DbfValue::Text(req.atribut.alamat.clone()),
-        DbfValue::Number(area_ha),
-        DbfValue::Text(req.atribut.kode_kbli.clone()),
-        DbfValue::Number(req.atribut.tahun as f64),
+        DbfValue::Number(1.0),
+        DbfValue::Text(req.atribut.pemrakarsa.clone()),
+        DbfValue::Text(req.atribut.kegiatan.clone()),
+        DbfValue::Text(req.atribut.tahun.to_string()),
+        DbfValue::Text(req.atribut.provinsi.clone()),
+        DbfValue::Text(req.atribut.keterangan.clone()),
+        DbfValue::Text(LAYER_TAPAK_PROYEK.into()),
     ]
 }
 
@@ -227,10 +229,11 @@ mod tests {
             basename: "Tapak Usaha 1".into(),
             ring,
             atribut: Atribut {
-                nama: "Warung Ilham".into(),
-                alamat: "Jl. Contoh No. 1, Jakarta".into(),
-                kode_kbli: "47111".into(),
+                pemrakarsa: "Warung Ilham".into(),
+                kegiatan: "Warung makan".into(),
                 tahun: 2026,
+                provinsi: "DKI Jakarta".into(),
+                keterangan: "Jl. Contoh No. 1, Jakarta".into(),
             },
         }
     }
@@ -247,10 +250,10 @@ mod tests {
         let cfg = PortalsConfig::default_config();
         let profile = cfg.resolve("combined").unwrap();
         let out = export_zip(&request(ring()), &cfg, &profile).unwrap();
-        assert_eq!(out.basename, "Tapak_Usaha_1");
+        assert_eq!(out.basename, "TAPAK_USAHA_1");
         assert_eq!(
             out.file_names,
-            ["Tapak_Usaha_1.shp", "Tapak_Usaha_1.shx", "Tapak_Usaha_1.dbf", "Tapak_Usaha_1.prj", "Tapak_Usaha_1.cpg"]
+            ["TAPAK_USAHA_1.shp", "TAPAK_USAHA_1.shx", "TAPAK_USAHA_1.dbf", "TAPAK_USAHA_1.prj", "TAPAK_USAHA_1.cpg"]
         );
         assert!(out.check.ok, "{:?}", out.check.issues);
         assert_eq!(out.check.feature_count, Some(1));

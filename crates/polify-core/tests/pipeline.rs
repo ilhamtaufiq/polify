@@ -25,10 +25,11 @@ fn valid_zip() -> Vec<u8> {
         basename: "tapak".into(),
         ring: square(),
         atribut: Atribut {
-            nama: "Warung".into(),
-            alamat: "Jakarta".into(),
-            kode_kbli: "47111".into(),
+            pemrakarsa: "Warung".into(),
+            kegiatan: "Warung makan".into(),
             tahun: 2026,
+            provinsi: "DKI Jakarta".into(),
+            keterangan: "Jakarta".into(),
         },
     };
     export_zip(&req, &cfg, &profile).unwrap().zip

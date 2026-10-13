@@ -5,6 +5,7 @@
 
 use polify_core::coords::{self, ConvertInput};
 use polify_core::export::{self, ExportRequest};
+use polify_core::import;
 use polify_core::zipcheck::{self, Expected, ZipEntry};
 use polify_core::{Coord, PortalsConfig};
 use serde::Serialize;
@@ -78,6 +79,20 @@ pub fn check_zip(bytes: &[u8], profile_id: &str, expected_json: Option<String>) 
     let profile = cfg.resolve(profile_id).map_err(|e| js_error("PROFILE", e))?;
     let expected = parse_expected(expected_json)?;
     to_json(&zipcheck::check_entries(&entries, &profile, expected.as_ref()))
+}
+
+/// Impor GeoJSON. Mengembalikan `ImportResult` JSON: `{"features": [[[lon,lat],...]], "warnings": [...]}`.
+#[wasm_bindgen]
+pub fn import_geojson(text: &str) -> Result<String, JsValue> {
+    let out = import::from_geojson(text).map_err(|e| js_error(e.code(), e))?;
+    to_json(&out)
+}
+
+/// Impor ZIP SHP. Mengembalikan `ImportResult` JSON dengan format yang sama seperti `import_geojson`.
+#[wasm_bindgen]
+pub fn import_shp_zip(bytes: &[u8]) -> Result<String, JsValue> {
+    let out = import::from_shp_zip(bytes).map_err(|e| js_error(e.code(), e))?;
+    to_json(&out)
 }
 
 /// Badge lulus/gagal untuk semua profil di konfigurasi.
