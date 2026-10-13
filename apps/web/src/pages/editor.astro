@@ -16,6 +16,8 @@ const jsonLd = [
 <Base
   title="Buat SHP Polygon dari Peta | Polify Cianjur"
   description="Gambar batas lahan di peta Cianjur, periksa otomatis, lalu unduh ZIP SHP siap unggah ke OSS RBA dan Amdalnet. Diproses di browser."
+  image="/og-editor.png"
+  imageAlt="Editor Polify: gambar batas lahan di peta lalu unduh ZIP SHP"
   jsonLd={jsonLd}
 >
   <section class="editor-hero">
@@ -37,6 +39,21 @@ const jsonLd = [
       <div class="actions">
         <button id="btn-undo" type="button" class="btn-ghost">Hapus titik terakhir</button>
         <button id="btn-clear" type="button" class="btn-ghost">Kosongkan</button>
+        <button id="btn-locate" type="button" class="btn-ghost">Ambil lokasi saya</button>
+      </div>
+
+      <div class="coord-head">
+        <h3>Titik koordinat</h3>
+        <button id="btn-copy-coords" type="button" class="btn-ghost">Salin semua</button>
+      </div>
+      <p id="coords-empty" class="note">Belum ada titik. Klik peta untuk menambahkan titik.</p>
+      <div class="coord-table-wrap">
+        <table class="coord-table" id="coords" hidden>
+          <thead>
+            <tr><th>No</th><th>Lintang</th><th>Bujur</th><th>Salin</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
 
       <label for="ring">Koordinat polygon <span class="note">(satu titik per baris, <code>lon,lat</code>)</span></label>
@@ -169,10 +186,58 @@ const jsonLd = [
     const polyLayer = L.polygon([], { color: "#1b6e4f" }).addTo(map);
     const markerLayer = L.layerGroup().addTo(map);
 
+    const coordsTable = document.getElementById("coords") as HTMLTableElement;
+    const coordsBody = coordsTable.tBodies[0];
+    const coordsEmpty = document.getElementById("coords-empty") as HTMLParagraphElement;
+
+    // Format lintang, bujur desimal: sama dengan kolom "Konversi koordinat".
+    const fmt = (n: number) => n.toFixed(6);
+    const latLonText = ([lon, lat]: Coord) => `${fmt(lat)}, ${fmt(lon)}`;
+
+    const copyText = async (text: string, label: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        show(`${label} disalin ke papan klip.`);
+      } catch {
+        show("Gagal menyalin. Browser tidak mengizinkan akses papan klip di halaman ini.", false);
+      }
+    };
+
+    const renderCoordTable = (pts: Coord[]) => {
+      coordsBody.replaceChildren(
+        ...pts.map((pt, i) => {
+          const tr = document.createElement("tr");
+          const [lon, lat] = pt;
+          for (const text of [String(i + 1), fmt(lat), fmt(lon)]) {
+            const td = document.createElement("td");
+            td.textContent = text;
+            tr.append(td);
+          }
+          const td = document.createElement("td");
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "btn-ghost";
+          btn.textContent = "Salin";
+          btn.addEventListener("click", () => copyText(latLonText(pt), `Titik ${i + 1}`));
+          td.append(btn);
+          tr.append(td);
+          return tr;
+        })
+      );
+      coordsTable.hidden = pts.length === 0;
+      coordsEmpty.hidden = pts.length > 0;
+    };
+
     const drawOnMap = (pts: Coord[]) => {
       polyLayer.setLatLngs(pts.map(([lon, lat]) => [lat, lon] as [number, number]));
       markerLayer.clearLayers();
-      pts.forEach(([lon, lat]) => L.circleMarker([lat, lon], { radius: 5 }).addTo(markerLayer));
+      // bubblingMouseEvents: false agar klik pada titik tidak ikut menambah titik baru
+      pts.forEach((pt, i) => {
+        L.circleMarker([pt[1], pt[0]], { radius: 5, bubblingMouseEvents: false })
+          .bindTooltip(`Titik ${i + 1}: ${latLonText(pt)}`)
+          .addTo(markerLayer);
+      });
+      renderCoordTable(pts);
     };
 
     // Satu sumber kebenaran: textarea. Peta selalu digambar ulang dari isi textarea.
@@ -192,6 +257,51 @@ const jsonLd = [
       setPoints(pts);
     });
     document.getElementById("btn-clear")!.addEventListener("click", () => setPoints([]));
+
+    document.getElementById("btn-copy-coords")!.addEventListener("click", () => {
+      const pts = currentPoints();
+      if (!pts.length) return show("Belum ada titik untuk disalin.", false);
+      copyText(pts.map(latLonText).join("\n"), `${pts.length} titik`);
+    });
+
+    // Lokasi usaha dari GPS/Wi-Fi browser. Hanya berjalan di konteks aman (HTTPS atau localhost).
+    const locationLayer = L.layerGroup().addTo(map);
+    const locateBtn = document.getElementById("btn-locate") as HTMLButtonElement;
+    const pairEl = document.getElementById("pair") as HTMLInputElement;
+    if (!("geolocation" in navigator)) locateBtn.disabled = true;
+
+    locateBtn.addEventListener("click", () => {
+      show("Mengambil lokasi dari browser... izinkan akses lokasi jika diminta.");
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          const { latitude: lat, longitude: lon, accuracy } = coords;
+          locationLayer.clearLayers();
+          L.circle([lat, lon], { radius: accuracy, color: "#e4572e", weight: 1, fillOpacity: 0.08 }).addTo(locationLayer);
+          L.circleMarker([lat, lon], {
+            radius: 7,
+            color: "#ffffff",
+            weight: 2,
+            fillColor: "#e4572e",
+            fillOpacity: 1,
+            bubblingMouseEvents: false,
+          })
+            .bindTooltip(`Lokasi usaha: ${latLonText([lon, lat])}`)
+            .addTo(locationLayer);
+          map.setView([lat, lon], Math.max(map.getZoom(), 16));
+          pairEl.value = `${fmt(lat)}, ${fmt(lon)}`;
+          show(`Lokasi usaha: ${fmt(lat)}, ${fmt(lon)} (akurasi sekitar ${Math.round(accuracy)} m)`);
+        },
+        (err) => {
+          const reason: Record<number, string> = {
+            1: "Izin lokasi ditolak. Aktifkan izin lokasi untuk situs ini di browser.",
+            2: "Lokasi tidak tersedia. Coba lagi di tempat dengan sinyal GPS atau Wi-Fi yang lebih baik.",
+            3: "Waktu habis saat mengambil lokasi. Coba lagi.",
+          };
+          show(reason[err.code] ?? `Gagal mengambil lokasi: ${err.message}`, false);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+      );
+    });
 
     // Poligon dari halaman impor (lihat /impor). Dibaca sekali lalu dihapus.
     try {
@@ -336,6 +446,14 @@ const jsonLd = [
     .inline input { min-width: 180px; }
     .tools h2 { font-size: 1.15rem; }
     .btn-primary { box-shadow: var(--shadow-lg); }
+    .coord-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 16px; }
+    .coord-head h3 { margin: 0; font-size: 1rem; }
+    .coord-table-wrap { max-height: 240px; overflow: auto; margin: 6px 0 12px; }
+    .coord-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+    .coord-table th { position: sticky; top: 0; background: var(--bg); }
+    .coord-table th, .coord-table :global(td) { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    .coord-table th:first-child, .coord-table :global(td:first-child) { width: 48px; }
+    .coord-table :global(td button) { padding: 2px 10px; font-size: 0.85rem; }
     @media (max-width: 639px) {
       #map { height: 340px; }
     }
