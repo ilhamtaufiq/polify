@@ -1,0 +1,13 @@
+.git
+.github
+docs
+target
+**/target
+**/node_modules
+**/dist
+**/.astro
+crates/polify-wasm/pkg
+crates/polify-wasm/demo
+**/*.md
+Dockerfile
+.dockerignore
