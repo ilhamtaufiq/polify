@@ -1,0 +1,346 @@
+---
+import Base from "../layouts/Base.astro";
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Polify", item: "/" },
+      { "@type": "ListItem", position: 2, name: "Buat SHP", item: "/editor" },
+    ],
+  },
+];
+---
+
+<Base
+  title="Buat SHP Polygon dari Peta | Polify Cianjur"
+  description="Gambar batas lahan di peta Cianjur, periksa otomatis, lalu unduh ZIP SHP siap unggah ke OSS RBA dan Amdalnet. Diproses di browser."
+  jsonLd={jsonLd}
+>
+  <section class="editor-hero">
+    <p class="eyebrow">Polify Cianjur</p>
+    <h1>Gambar batas lahanmu. Kami urus formatnya.</h1>
+    <p class="lead">
+      Tanpa ArcGIS, tanpa QGIS. Klik titik-titik batas di peta, lalu unduh satu ZIP SHP
+      polygon untuk akun non-UMK di OSS RBA atau untuk AMDALnet. Usaha mikro berisiko rendah
+      umumnya cukup koordinat titik; cek ketentuan OSS untuk usaha Anda.
+    </p>
+    <p class="note">Diproses di browser. Data tidak dikirim ke server.</p>
+  </section>
+
+  <div class="steps">
+    <section class="step-card" id="step-1">
+      <h2><span class="step-no">1</span> Gambar polygon di peta</h2>
+      <p class="note">Klik setiap sudut batas lahan. Titik otomatis masuk ke daftar koordinat.</p>
+      <div id="map" role="application" aria-label="Peta Cianjur untuk menggambar polygon"></div>
+      <div class="actions">
+        <button id="btn-undo" type="button" class="btn-ghost">Hapus titik terakhir</button>
+        <button id="btn-clear" type="button" class="btn-ghost">Kosongkan</button>
+      </div>
+
+      <label for="ring">Koordinat polygon <span class="note">(satu titik per baris, <code>lon,lat</code>)</span></label>
+      <textarea id="ring" spellcheck="false">107.135,-6.824
+107.135,-6.814
+107.145,-6.814
+107.145,-6.824
+107.135,-6.824</textarea>
+    </section>
+
+    <section class="step-card" id="step-2">
+      <h2><span class="step-no">2</span> Periksa otomatis</h2>
+      <p class="note">Kami cek bentuk, arah, dan kelengkapan titik sebelum berkas dibuat.</p>
+      <div class="actions">
+        <button id="btn-validate" type="button">Periksa polygon</button>
+        <button id="btn-fix" type="button" class="btn-ghost">Perbaiki otomatis</button>
+      </div>
+    </section>
+
+    <section class="step-card" id="step-3">
+      <h2><span class="step-no">3</span> Isi data lahan</h2>
+      <label for="basename">Nama dasar file <span class="note">(otomatis huruf kapital)</span></label>
+      <input id="basename" value="polify_lokasi" />
+
+      <div class="grid-2">
+        <div>
+          <label for="pemrakarsa">Pemrakarsa</label>
+          <input id="pemrakarsa" placeholder="Contoh: PT Cianjur Makmur" />
+        </div>
+        <div>
+          <label for="kegiatan">Kegiatan</label>
+          <input id="kegiatan" placeholder="Contoh: Gudang penyimpanan" />
+        </div>
+        <div>
+          <label for="tahun">Tahun</label>
+          <input id="tahun" type="number" value="2026" />
+        </div>
+        <div>
+          <label for="provinsi">Provinsi</label>
+          <input id="provinsi" value="Jawa Barat" />
+        </div>
+      </div>
+      <label for="keterangan">Keterangan <span class="note">(alamat atau lokasi)</span></label>
+      <input id="keterangan" placeholder="Contoh: Desa Sayang, Kecamatan Cianjur" />
+      <p class="note">Kolom ini sama untuk OSS RBA dan Amdalnet, sesuai juknis Amdalnet halaman 16.</p>
+    </section>
+
+    <section class="step-card" id="step-4">
+      <h2><span class="step-no">4</span> Unduh ZIP SHP</h2>
+      <p class="note">Satu ZIP berisi SHP, SHX, DBF, PRJ, dan CPG dengan nama dasar yang sama. Ekspor hanya dibuat jika lolos pemeriksaan ulang.</p>
+      <div class="actions">
+        <button id="btn-export" type="button" class="btn-primary">Unduh ZIP SHP siap unggah</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="tools">
+    <h2>Alat tambahan</h2>
+    <label for="pair">Konversi koordinat <span class="note">(lintang, bujur desimal)</span></label>
+    <div class="inline">
+      <input id="pair" value="-6.8190, 107.1420" />
+      <button id="btn-convert" type="button" class="btn-ghost">Konversi</button>
+    </div>
+  </section>
+
+  <h2>Hasil</h2>
+  <pre id="out" aria-live="polite">Siap. Gambar polygon di peta untuk memulai.</pre>
+
+  <script>
+    import L from "leaflet";
+    import "leaflet/dist/leaflet.css";
+    import initWasm, * as wasm from "../wasm/polify_wasm.js";
+
+    type Coord = [number, number];
+
+    // Pusat peta: Kabupaten Cianjur, Jawa Barat.
+    const CIANJUR_CENTER: [number, number] = [-6.8190, 107.1420];
+
+    const out = document.getElementById("out") as HTMLPreElement;
+    const ringEl = document.getElementById("ring") as HTMLTextAreaElement;
+    const show = (text: string, ok = true) => {
+      out.className = ok ? "msg-ok" : "msg-err";
+      out.textContent = text;
+    };
+
+    // Format error dari WASM: JSON string {"code","message"}
+    const errText = (err: unknown) => {
+      if (typeof err === "string") {
+        try {
+          const e = JSON.parse(err);
+          return `${e.code}: ${e.message}`;
+        } catch {
+          return err;
+        }
+      }
+      return String(err);
+    };
+
+    const parseRing = (text: string): Coord[] =>
+      text
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [lon, lat] = line.split(",").map((s) => Number(s.trim()));
+          return [lon, lat] as Coord;
+        });
+
+    const ringToText = (ring: Coord[]) => ring.map(([lon, lat]) => `${lon},${lat}`).join("\n");
+
+    // Titik terbuka: buang titik penutup yang sama dengan titik pertama
+    const openRing = (ring: Coord[]): Coord[] => {
+      const n = ring.length;
+      if (n > 1 && ring[0][0] === ring[n - 1][0] && ring[0][1] === ring[n - 1][1]) {
+        return ring.slice(0, -1);
+      }
+      return ring;
+    };
+    const closeRing = (pts: Coord[]): Coord[] => (pts.length ? [...pts, pts[0]] : []);
+    // Baris yang belum lengkap saat diketik dibuang agar peta tidak error
+    const currentPoints = (): Coord[] =>
+      openRing(parseRing(ringEl.value)).filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat));
+
+    // Peta Leaflet. Leaflet memakai [lat, lon], sedangkan kontrak WASM memakai [lon, lat].
+    const map = L.map("map").setView(CIANJUR_CENTER, 14);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+    const polyLayer = L.polygon([], { color: "#1b6e4f" }).addTo(map);
+    const markerLayer = L.layerGroup().addTo(map);
+
+    const drawOnMap = (pts: Coord[]) => {
+      polyLayer.setLatLngs(pts.map(([lon, lat]) => [lat, lon] as [number, number]));
+      markerLayer.clearLayers();
+      pts.forEach(([lon, lat]) => L.circleMarker([lat, lon], { radius: 5 }).addTo(markerLayer));
+    };
+
+    // Satu sumber kebenaran: textarea. Peta selalu digambar ulang dari isi textarea.
+    const setPoints = (pts: Coord[]) => {
+      ringEl.value = pts.length ? ringToText(closeRing(pts)) : "";
+      drawOnMap(pts);
+    };
+
+    map.on("click", (e) => {
+      setPoints([...currentPoints(), [e.latlng.lng, e.latlng.lat]]);
+    });
+    ringEl.addEventListener("input", () => drawOnMap(currentPoints()));
+
+    document.getElementById("btn-undo")!.addEventListener("click", () => {
+      const pts = currentPoints();
+      pts.pop();
+      setPoints(pts);
+    });
+    document.getElementById("btn-clear")!.addEventListener("click", () => setPoints([]));
+
+    // Poligon dari halaman impor (lihat /impor). Dibaca sekali lalu dihapus.
+    try {
+      const saved = sessionStorage.getItem("polify:import");
+      if (saved) {
+        sessionStorage.removeItem("polify:import");
+        setPoints(openRing(JSON.parse(saved) as Coord[]));
+      }
+    } catch {
+      // Penyimpanan tidak tersedia (mode privat) atau data rusak: lewati saja.
+    }
+
+    drawOnMap(currentPoints());
+    if (currentPoints().length) map.fitBounds(polyLayer.getBounds(), { padding: [24, 24] });
+
+    // Pemuatan WASM sekali saja. Berkas disalin ke src/wasm oleh `npm run sync:wasm`.
+    const wasmPromise = initWasm().then(() => wasm);
+
+    const withWasm = (fn: (w: any) => void) => async () => {
+      try {
+        fn(await wasmPromise);
+      } catch (err) {
+        show(errText(err), false);
+      }
+    };
+
+    document.getElementById("btn-validate")!.addEventListener(
+      "click",
+      withWasm((w) => {
+        const report = JSON.parse(w.validate_ring(JSON.stringify(parseRing(ringEl.value))));
+        const lines = report.issues.map((i: any) => `[${i.severity}] ${i.message}`);
+        show(
+          `${report.ok ? "Lolos pemeriksaan dasar" : "Ada masalah"}, ${report.vertexCount} titik\n` +
+            (lines.join("\n") || "Tidak ada catatan."),
+          report.ok
+        );
+      })
+    );
+
+    document.getElementById("btn-fix")!.addEventListener(
+      "click",
+      withWasm((w) => {
+        const res = JSON.parse(w.autofix_ring(JSON.stringify(parseRing(ringEl.value))));
+        ringEl.value = ringToText(res.ring);
+        drawOnMap(openRing(res.ring));
+        show(`Perbaikan diterapkan: ${res.applied.join(", ") || "tidak ada"}`);
+      })
+    );
+
+    document.getElementById("btn-convert")!.addEventListener(
+      "click",
+      withWasm((w) => {
+        const text = (document.getElementById("pair") as HTMLInputElement).value;
+        const res = JSON.parse(w.convert_coordinates(JSON.stringify({ mode: "pair", text })));
+        show(`DD : ${res.dd}\nDMS: ${res.dms.lat} ${res.dms.lon}\nUTM: ${res.utm.text}`);
+      })
+    );
+
+    document.getElementById("btn-export")!.addEventListener(
+      "click",
+      withWasm((w) => {
+        const val = (id: string) => (document.getElementById(id) as HTMLInputElement).value;
+        const request = {
+          basename: val("basename"),
+          ring: parseRing(ringEl.value),
+          atribut: {
+            pemrakarsa: val("pemrakarsa"),
+            kegiatan: val("kegiatan"),
+            tahun: Number(val("tahun")),
+            provinsi: val("provinsi"),
+            keterangan: val("keterangan"),
+          },
+        };
+        const bytes: Uint8Array = w.export_zip(JSON.stringify(request), "combined");
+        const blob = new Blob([bytes], { type: "application/zip" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `${request.basename.toUpperCase()}.zip`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        show(`ZIP siap unggah: ${request.basename.toUpperCase()}.zip (${bytes.length} byte)`);
+      })
+    );
+  </script>
+
+  <style>
+    .editor-hero { padding: 12px 0 28px; border-bottom: 1px solid var(--border); }
+    .editor-hero h1 { font-size: clamp(1.9rem, 4.4vw, 2.7rem); max-width: 22ch; }
+    .eyebrow {
+      margin: 0;
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+    }
+    .lead { font-size: 1.05rem; color: var(--fg); }
+    .steps { display: grid; gap: 0; margin-top: 8px; }
+    .step-card {
+      padding: 26px 0 28px;
+      border-top: 1px solid var(--border);
+      background: none;
+      box-shadow: none;
+      border-radius: 0;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+    }
+    .step-card h2 { margin: 0 0 6px; font-size: 1.25rem; display: flex; align-items: center; gap: 12px; }
+    .step-no {
+      display: inline-grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--brand);
+      background: none;
+      color: var(--brand);
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .step-card > .note { margin: 0 0 12px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .btn-ghost { background: transparent; color: var(--accent); }
+    .btn-primary { font-size: 1rem; padding: 12px 18px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr; gap: 0 12px; }
+    .inline { display: flex; gap: 8px; align-items: center; }
+    .inline input { flex: 1; }
+    .tools { margin-top: 24px; }
+    #map {
+      height: 440px;
+      margin: 8px 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow-lg);
+    }
+    .tools { border-top: 1px solid var(--border); padding-top: 22px; }
+    .tools + h2 { margin-top: 32px; }
+    .inline { flex-wrap: wrap; }
+    .inline input { min-width: 180px; }
+    .tools h2 { font-size: 1.15rem; }
+    .btn-primary { box-shadow: var(--shadow-lg); }
+    @media (max-width: 639px) {
+      #map { height: 340px; }
+    }
+    @media (min-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</Base>

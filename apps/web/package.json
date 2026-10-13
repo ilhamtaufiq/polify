@@ -1,0 +1,17 @@
+{
+  "name": "@polify/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync:wasm": "node scripts/sync-wasm.mjs",
+    "dev": "npm run sync:wasm && astro dev",
+    "build": "npm run sync:wasm && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^7.3.8",
+    "leaflet": "^1.9.4"
+  }
+}

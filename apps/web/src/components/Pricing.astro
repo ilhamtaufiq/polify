@@ -1,0 +1,82 @@
+---
+interface Props {
+  /** Judul di atas bagian harga. */
+  heading?: string;
+}
+
+const { heading = "Harga" } = Astro.props;
+
+const umkmFeatures = [
+  "Gambar polygon di peta Cianjur",
+  "Periksa dan perbaiki otomatis",
+  "Unduh ZIP SHP polygon untuk akun non-UMK dan AMDALnet",
+  "Impor GeoJSON dan ZIP SHP",
+  "Cek ZIP SHP yang sudah ada",
+];
+---
+
+<section class="pricing" aria-labelledby="pricing-title">
+  <h2 id="pricing-title">{heading}</h2>
+  <p class="section-sub">Mulai gratis. Tidak perlu akun untuk mencoba.</p>
+
+  <div class="plans">
+    <article class="plan plan-featured">
+      <p class="plan-tag">Paket dasar</p>
+      <p class="plan-price"><strong>Gratis</strong></p>
+      <p class="plan-desc">Untuk semua pengguna, perorangan maupun usaha. Tanpa akun dan tanpa batas pemakaian.</p>
+      <ul class="plan-list">
+        {umkmFeatures.map((f) => <li>{f}</li>)}
+      </ul>
+      <a class="cta" href="/editor">Mulai gratis</a>
+    </article>
+
+    <article class="plan">
+      <p class="plan-tag">Konsultan</p>
+      <p class="plan-price"><strong>Segera hadir</strong></p>
+      <p class="plan-desc">Untuk konsultan dokumen lingkungan dan KKPR. Harga belum ditetapkan.</p>
+      <ul class="plan-list">
+        <li>Pemrosesan banyak lahan sekaligus</li>
+        <li>Penyimpanan proyek per klien</li>
+        <li>Akun tim</li>
+      </ul>
+      <a class="cta-ghost" href="/konsultan">Pelajari lebih lanjut</a>
+    </article>
+  </div>
+
+  <p class="note">Harga untuk konsultan akan diumumkan sebelum fitur tersebut dibuka.</p>
+
+  <style>
+    .pricing { margin-top: 56px; }
+    .pricing h2 { margin-bottom: 6px; }
+    .section-sub { color: var(--muted); margin: 0 0 22px; }
+    .plans { display: grid; gap: 18px; grid-template-columns: 1fr; }
+    .plan {
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .plan-featured {
+      border: 2px solid var(--brand);
+      box-shadow: var(--shadow-lg);
+    }
+    .plan-tag {
+      margin: 0;
+      font-weight: 700;
+      color: var(--brand);
+      font-size: 0.95rem;
+    }
+    .plan-price { margin: 0; font-size: 1.6rem; font-family: "Bricolage Grotesque", sans-serif; }
+    .plan-price strong { font-weight: 800; }
+    .plan-desc { margin: 0 0 8px; color: var(--muted); }
+    .plan-list { margin: 0 0 14px; padding-left: 20px; display: grid; gap: 6px; }
+    .plan .cta, .plan .cta-ghost { margin-top: auto; align-self: flex-start; }
+    .pricing .note { margin-top: 14px; }
+    @media (min-width: 760px) {
+      .plans { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</section>

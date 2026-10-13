@@ -1,0 +1,110 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description: string;
+  /** Objek JSON-LD tambahan untuk halaman ini (opsional). */
+  jsonLd?: Record<string, unknown>[];
+}
+
+const { title, description, jsonLd = [] } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const siteName = "Polify";
+const year = new Date().getFullYear();
+
+const baseLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: siteName,
+    url: Astro.site?.toString(),
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: siteName,
+    url: Astro.site?.toString(),
+  },
+];
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content="index, follow" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap"
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    {[...baseLd, ...jsonLd].map((obj) => (
+      <script type="application/ld+json" set:html={JSON.stringify(obj)} />
+    ))}
+  </head>
+  <body>
+    <header class="site-header">
+      <a href="/" class="brand" aria-label="Polify, beranda">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="9" fill="var(--brand)" />
+          <path d="M7 22 L12 9 L24 11 L25 22 Z" fill="none" stroke="var(--brand-ink)" stroke-width="2.4" stroke-linejoin="round" />
+          <circle cx="12" cy="9" r="2" fill="var(--accent)" />
+        </svg>
+        <span>Polify</span>
+        <small>Cianjur</small>
+      </a>
+      <nav aria-label="Utama">
+        <a href="/impor">Impor & cek</a>
+        <a href="/editor" class="nav-cta">Buat SHP</a>
+      </nav>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div>
+          <p><strong>Polify</strong>: batas lahan jadi ZIP SHP untuk OSS RBA dan Amdalnet.</p>
+          <p class="footer-note">
+            Polify tidak berafiliasi dengan OSS RBA, Amdalnet, KLHK, atau ATR/BPN. Keputusan
+            akhir ada pada sistem OSS RBA, Amdalnet, dan instansi terkait.
+          </p>
+        </div>
+        <div>
+          <strong>Halaman</strong>
+          <ul>
+            <li><a href="/editor">Buat SHP</a></li>
+            <li><a href="/impor">Impor & cek ZIP</a></li>
+            <li><a href="/konsultan">Untuk konsultan</a></li>
+          </ul>
+        </div>
+        <div>
+          <strong>Data</strong>
+          <ul>
+            <li>Diproses di browser</li>
+            <li>Tidak dikirim ke server</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note" style="text-align:center;padding:0 20px 24px;margin:0">© {year} Polify</p>
+    </footer>
+  </body>
+</html>

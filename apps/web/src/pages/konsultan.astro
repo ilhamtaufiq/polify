@@ -1,0 +1,119 @@
+---
+import Base from "../layouts/Base.astro";
+
+const description =
+  "Polify untuk konsultan dokumen lingkungan dan KKPR: buat dan periksa SHP polygon untuk OSS RBA dan Amdalnet, diproses di browser.";
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Polify", item: "/" },
+      { "@type": "ListItem", position: 2, name: "Untuk konsultan", item: "/konsultan" },
+    ],
+  },
+];
+
+const jobs = [
+  {
+    title: "Batas lahan dari klien",
+    text: "Terima koordinat atau file GeoJSON dari klien, impor, lalu periksa sebelum dikirim ke portal.",
+  },
+  {
+    title: "Pemeriksaan sebelum unggah",
+    text: "Setiap ZIP diperiksa ulang. Yang diberikan hanya berkas yang lolos pemeriksaan untuk aturan yang dipilih.",
+  },
+  {
+    title: "Tabel atribut yang konsisten",
+    text: "Kolom PEMRAKARSA, KEGIATAN, TAHUN, PROVINSI, KETERANGAN, dan LAYER diisi dengan urutan yang sama untuk setiap lahan.",
+  },
+  {
+    title: "Data klien tetap di perangkat",
+    text: "Pemeriksaan dan ekspor berjalan di browser. Data klien tidak diunggah ke server Polify.",
+  },
+];
+---
+
+<Base title="Untuk Konsultan | Polify" description={description} jsonLd={jsonLd}>
+  <header class="page-head">
+    <p class="eyebrow">Untuk konsultan dokumen lingkungan dan KKPR</p>
+    <h1>Lebih banyak lahan selesai, tanpa menunggu juru GIS.</h1>
+    <p class="lead">
+      Polify membantu Anda menyiapkan SHP polygon untuk klien non-UMK di OSS RBA dan untuk AMDALnet, lalu
+      memeriksanya sebelum berkas dikirim. Tidak perlu lisensi ArcGIS atau QGIS untuk setiap
+      staf.
+    </p>
+    <div class="actions">
+      <a class="cta" href="/editor">Coba di editor</a>
+      <a class="text-link" href="/impor">Impor SHP yang sudah ada</a>
+    </div>
+  </header>
+
+  <section class="block">
+    <h2>Empat hal yang dibantu Polify</h2>
+    <dl class="jobs">
+      {jobs.map((j) => (
+        <div class="job">
+          <dt>{j.title}</dt>
+          <dd>{j.text}</dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+
+  <section class="block split">
+    <div>
+      <h2>Yang masih dalam pengembangan</h2>
+      <p>
+        Pemrosesan banyak lahan sekaligus, penyimpanan proyek per klien, dan akun tim belum
+        tersedia. Fitur-fitur ini direncanakan untuk tahap berikutnya, dan rinciannya belum
+        ditetapkan.
+      </p>
+    </div>
+    <div>
+      <h2>Yang belum kami janjikan</h2>
+      <p>
+        Polify tidak menjamin berkas diterima OSS RBA atau Amdalnet. Aturan yang dipakai
+        masih dalam proses verifikasi terhadap juknis resmi. Gunakan hasil pemeriksaan sebagai
+        bantuan, bukan pengganti penilaian Anda.
+      </p>
+    </div>
+  </section>
+
+  <section class="block closing-line">
+    <h2>Coba dengan satu lahan klien.</h2>
+    <p>Buat satu ZIP, periksa dengan aturan yang Anda pakai, lalu nilai sendiri hasilnya.</p>
+    <a class="cta" href="/editor">Buat ZIP pertama</a>
+  </section>
+
+  <style>
+    .page-head { margin-bottom: 8px; }
+    .page-head h1 { font-size: clamp(1.9rem, 4.6vw, 2.8rem); max-width: 22ch; }
+    .actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 22px 0 8px; }
+    .text-link { color: var(--brand); font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+    .block { margin-top: 56px; }
+    .jobs { margin: 0; }
+    .job {
+      display: grid;
+      gap: 4px 20px;
+      padding: 16px 0;
+      border-top: 1px solid var(--border);
+    }
+    .job:last-child { border-bottom: 1px solid var(--border); }
+    .job dt { font-weight: 700; font-size: 1.05rem; }
+    .job dd { margin: 0; color: var(--muted); }
+    .split { display: grid; gap: 28px; }
+    .split p { color: var(--muted); margin: 0; }
+    .split > div { border-top: 3px solid var(--brand); padding-top: 14px; }
+    .closing-line {
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+    .closing-line p { color: var(--muted); }
+    @media (min-width: 760px) {
+      .job { grid-template-columns: 260px 1fr; }
+      .split { grid-template-columns: 1fr 1fr; gap: 40px; }
+    }
+  </style>
+</Base>

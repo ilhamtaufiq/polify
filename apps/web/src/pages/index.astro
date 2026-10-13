@@ -1,0 +1,347 @@
+---
+import Base from "../layouts/Base.astro";
+import Pricing from "../components/Pricing.astro";
+
+const description =
+  "Buat file SHP polygon untuk OSS RBA dan Amdalnet dari peta, tanpa ArcGIS atau QGIS. Diperiksa otomatis, diproses di browser, dari Cianjur.";
+
+const faq = [
+  {
+    q: "Apakah Polify gratis?",
+    a: "Pembuatan dan pemeriksaan SHP di browser tidak memerlukan akun, dan data tidak dikirim ke server. Batas fitur untuk layanan lanjutan akan diumumkan terpisah.",
+  },
+  {
+    q: "Apakah file hasil Polify pasti diterima OSS RBA atau Amdalnet?",
+    a: "Tidak ada jaminan. Polify memeriksa sesuai aturan yang kami ketahui. Keputusan akhir ada pada sistem OSS RBA, Amdalnet, dan instansi terkait. Cocokkan dengan panduan resmi terbaru dan hasil KKPR.",
+  },
+  {
+    q: "Apa isi file ZIP yang dihasilkan?",
+    a: "Satu ZIP berisi .shp, .shx, .dbf, .prj, dan .cpg dengan nama dasar yang sama dalam huruf kapital, tanpa folder di dalamnya. Tabel atribut mengikuti juknis Amdalnet: PEMRAKARSA, KEGIATAN, TAHUN, PROVINSI, KETERANGAN, dan LAYER.",
+  },
+  {
+    q: "Apakah saya perlu tahu GIS untuk memakai Polify?",
+    a: "Tidak. Klik titik batas lahan di peta, lalu isi data usaha. Jika sudah punya file dari QGIS atau ArcGIS, pakai halaman Impor dan cek.",
+  },
+];
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Polify",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web browser",
+    description,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "IDR" },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: "Cara membuat file SHP polygon untuk OSS RBA dan Amdalnet",
+    step: [
+      { "@type": "HowToStep", name: "Gambar batas lahan", text: "Klik setiap sudut batas lahan di peta." },
+      { "@type": "HowToStep", name: "Periksa otomatis", text: "Jalankan pemeriksaan lalu perbaikan otomatis untuk kesalahan yang aman diperbaiki." },
+      { "@type": "HowToStep", name: "Unduh ZIP SHP", text: "Isi data lahan, lalu unduh ZIP yang sudah diperiksa ulang." },
+    ],
+  },
+];
+
+const problems = [
+  { title: "ZIP berisi folder", text: "Berkas dibungkus dalam folder. Pembaca sistem menganggapnya tidak lengkap." },
+  { title: "Nama berkas tidak kapital", text: "Juknis Amdalnet meminta nama berkas huruf kapital semua." },
+  { title: ".prj hilang", text: "Tanpa berkas proyeksi, sistem tidak tahu di mana lahan Anda berada." },
+  { title: "Tabel atribut tidak cocok", text: "Kolom bawaan dari KML atau GIS lain sering ditolak karena tidak sesuai skema." },
+];
+
+const steps = [
+  { title: "Gambar batas lahan", text: "Peta dipusatkan di Cianjur. Klik setiap sudut batas, dan titik tersambung menjadi polygon." },
+  { title: "Periksa otomatis", text: "Titik yang belum tertutup, arah ring, dan titik ganda diperiksa. Perbaikan yang aman dilakukan otomatis." },
+  { title: "Unduh dan unggah", text: "Isi data lahan. ZIP diperiksa ulang sebelum diberikan, jadi yang Anda unduh sudah lolos pemeriksaan." },
+];
+---
+
+<Base title="Polify: Batas Lahan Jadi SHP untuk OSS RBA & Amdalnet" description={description} jsonLd={jsonLd}>
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">Untuk pemrakarsa usaha non-UMK dan konsultan di Cianjur</p>
+      <h1>Gambar batas lahan. ZIP-nya kami rapikan.</h1>
+      <p class="lead">
+        Tanpa ArcGIS dan tanpa QGIS. Klik sudut lahan di peta, isi data usaha, lalu unduh satu
+        ZIP yang sudah diperiksa sebelum Anda mengunggahnya. Polygon diminta untuk akun non-UMK
+        di OSS RBA, dan untuk AMDALnet.
+      </p>
+      <div class="actions">
+        <a class="cta" href="/editor">Mulai gambar di peta</a>
+        <a class="text-link" href="/impor">Sudah punya SHP? Periksa di sini</a>
+      </div>
+      <p class="note">Diproses di browser. Data tidak dikirim ke server.</p>
+    </div>
+
+    <figure class="hero-map" aria-hidden="true">
+      <svg viewBox="0 0 480 380" role="img">
+        <g class="contours" fill="none" stroke="#9bbfae" stroke-width="1.2" opacity="0.5">
+          <path d="M-10 60 C80 20 160 80 240 40 S400 10 500 60" />
+          <path d="M-10 110 C90 70 170 130 250 90 S410 60 500 110" />
+          <path d="M-10 160 C100 120 180 180 260 140 S420 110 500 160" />
+          <path d="M-10 300 C90 260 170 320 250 280 S410 250 500 300" />
+          <path d="M-10 350 C100 310 180 370 260 330 S420 300 500 350" />
+        </g>
+        <path class="parcel" pathLength="1"
+          d="M92 262 C130 214 168 206 206 170 C246 132 284 118 336 124 C372 128 390 164 382 210 C374 258 340 292 282 300 C222 308 170 322 128 314 C104 310 86 290 92 262 Z"
+          fill="rgba(228,87,46,0.22)" stroke="#e4572e" stroke-width="3.5" stroke-linejoin="round" />
+        <g class="vertices" fill="#f9fbf9" stroke="#e4572e" stroke-width="2.5">
+          <circle cx="92" cy="262" r="6" />
+          <circle cx="206" cy="170" r="6" />
+          <circle cx="336" cy="124" r="6" />
+          <circle cx="382" cy="210" r="6" />
+          <circle cx="282" cy="300" r="6" />
+          <circle cx="128" cy="314" r="6" />
+        </g>
+        <g class="readout" font-family="Figtree, sans-serif">
+          <rect x="262" y="26" width="196" height="64" rx="10" fill="#f9fbf9" />
+          <text x="278" y="50" font-size="13" font-weight="600" fill="#10231d">Titik 6 · tertutup</text>
+          <text x="278" y="72" font-size="12" fill="#4f625b">lon 107.1420, lat -6.8190</text>
+        </g>
+      </svg>
+    </figure>
+  </section>
+
+  <section class="block">
+    <h2>Kenapa SHP sering ditolak?</h2>
+    <p class="section-sub">Penyebabnya kecil, dan biasanya baru ketahuan setelah unggahan gagal.</p>
+    <dl class="problems">
+      {problems.map((p) => (
+        <div class="problem">
+          <dt>{p.title}</dt>
+          <dd>{p.text}</dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+
+  <section class="block">
+    <h2>Tiga langkah dari peta ke ZIP</h2>
+    <ol class="steps">
+      {steps.map((s, i) => (
+        <li>
+          <span class="step-no" aria-hidden="true">{i + 1}</span>
+          <h3>{s.title}</h3>
+          <p>{s.text}</p>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <section class="block">
+    <h2>Cara lama dan Polify</h2>
+    <table class="compare">
+      <thead>
+        <tr>
+          <th scope="col">Cara lama</th>
+          <th scope="col">Dengan Polify</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pasang ArcGIS atau QGIS dulu</td>
+          <td>Buka browser, langsung gambar di peta</td>
+        </tr>
+        <tr>
+          <td>Pelajari cara membuat layer dan atribut</td>
+          <td>Kolom sudah sesuai juknis Amdalnet</td>
+        </tr>
+        <tr>
+          <td>Ekspor, kompres, lalu cek sendiri</td>
+          <td>ZIP diperiksa ulang sebelum diberikan</td>
+        </tr>
+        <tr>
+          <td>Tahu ada yang salah saat unggahan ditolak</td>
+          <td>Masalah terlihat sebelum Anda mengunggah</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block promises">
+    <div>
+      <h3>Data tetap di perangkat Anda</h3>
+      <p>Pemeriksaan dan ekspor berjalan di browser. Data lahan tidak diunggah ke server.</p>
+    </div>
+    <div>
+      <h3>Tidak ada ZIP setengah jadi</h3>
+      <p>Berkas tidak diberikan jika isi ZIP tidak lolos pemeriksaan ulang.</p>
+    </div>
+    <div>
+      <h3>Jujur soal batasnya</h3>
+      <p>Kami tidak menjanjikan diterima. Keputusan akhir ada pada OSS RBA dan Amdalnet.</p>
+    </div>
+  </section>
+
+  <section class="block import-line">
+    <p>Sudah punya file dari QGIS atau ArcGIS? Impor GeoJSON atau ZIP SHP, atau periksa ZIP yang sudah ada.</p>
+    <a class="text-link" href="/impor">Buka Impor dan cek</a>
+  </section>
+
+  <Pricing />
+
+  <section class="block">
+    <h2>Pertanyaan umum</h2>
+    <div class="faq">
+      {faq.map((item) => (
+        <details>
+          <summary>{item.q}</summary>
+          <p>{item.a}</p>
+        </details>
+      ))}
+    </div>
+  </section>
+
+  <section class="closing">
+    <h2>Batasnya sudah ada. Tinggal digambar.</h2>
+    <a class="cta" href="/editor">Buat ZIP SHP sekarang</a>
+    <p class="note">Polify tidak berafiliasi dengan OSS RBA, Amdalnet, KLHK, atau ATR/BPN.</p>
+  </section>
+
+  <style>
+    .hero {
+      display: grid;
+      gap: 28px;
+      align-items: center;
+      margin: 8px 0 0;
+    }
+    .hero-text { padding: 8px 0; }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.4rem); max-width: 16ch; }
+    .actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 22px 0 14px; }
+    .text-link { color: var(--brand); font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+
+    .hero-map {
+      margin: 0;
+      background: #10231d;
+      border-radius: 22px;
+      padding: 14px;
+      overflow: hidden;
+    }
+    .hero-map svg { width: 100%; height: auto; display: block; }
+    .parcel {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: draw 1.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+    }
+    .vertices circle { opacity: 0; animation: pop 0.3s ease forwards; }
+    .vertices circle:nth-child(1) { animation-delay: 0.3s; }
+    .vertices circle:nth-child(2) { animation-delay: 0.6s; }
+    .vertices circle:nth-child(3) { animation-delay: 0.9s; }
+    .vertices circle:nth-child(4) { animation-delay: 1.2s; }
+    .vertices circle:nth-child(5) { animation-delay: 1.5s; }
+    .vertices circle:nth-child(6) { animation-delay: 1.8s; }
+    .readout { opacity: 0; animation: fade 0.5s ease 2.1s forwards; }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    @keyframes pop { to { opacity: 1; } }
+    @keyframes fade { to { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .parcel { stroke-dashoffset: 0; animation: none; }
+      .vertices circle, .readout { opacity: 1; animation: none; }
+    }
+
+    .block { margin-top: 64px; }
+    .block h2 { margin-bottom: 6px; }
+    .section-sub { color: var(--muted); margin: 0 0 22px; max-width: 60ch; }
+
+    .problems { margin: 0; }
+    .problem {
+      display: grid;
+      gap: 4px 20px;
+      padding: 16px 0;
+      border-top: 1px solid var(--border);
+    }
+    .problem:last-child { border-bottom: 1px solid var(--border); }
+    .problem dt { font-weight: 700; font-size: 1.05rem; }
+    .problem dd { margin: 0; color: var(--muted); }
+
+    .steps {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 22px;
+      counter-reset: none;
+    }
+    .steps li { position: relative; padding-left: 56px; }
+    .steps h3 { margin-bottom: 4px; }
+    .steps p { margin: 0; color: var(--muted); }
+    .step-no {
+      position: absolute;
+      left: 0;
+      top: -2px;
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 2px solid var(--brand);
+      color: var(--brand);
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .compare {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.98rem;
+    }
+    .compare th, .compare td {
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .compare thead th { color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+    .compare th:last-child, .compare td:last-child { color: var(--brand); font-weight: 600; }
+
+    .promises {
+      display: grid;
+      gap: 26px;
+      grid-template-columns: 1fr;
+    }
+    .promises h3 { margin-bottom: 6px; }
+    .promises p { margin: 0; color: var(--muted); }
+
+    .import-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 0;
+      border-top: 2px solid var(--accent);
+    }
+    .import-line p { margin: 0; max-width: 56ch; }
+
+    .faq { max-width: 760px; }
+
+    .closing {
+      margin-top: 72px;
+      padding: 48px 0 16px;
+      border-top: 1px solid var(--border);
+      text-align: left;
+    }
+    .closing h2 { font-size: clamp(1.6rem, 3.6vw, 2.3rem); margin-bottom: 18px; }
+
+    @media (min-width: 760px) {
+      .hero { grid-template-columns: 1fr 1fr; gap: 48px; }
+      .problem { grid-template-columns: 260px 1fr; }
+      .promises { grid-template-columns: repeat(3, 1fr); gap: 32px; }
+      .promises > div { border-top: 3px solid var(--brand); padding-top: 14px; }
+    }
+  </style>
+</Base>

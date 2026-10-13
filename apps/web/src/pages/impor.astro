@@ -1,0 +1,159 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base
+  title="Impor dan Cek ZIP SHP | Polify"
+  description="Impor GeoJSON atau ZIP SHP ke editor, atau periksa ZIP SHP yang sudah ada terhadap aturan OSS RBA dan Amdalnet. Diproses di browser."
+>
+  <header class="page-head">
+    <p class="eyebrow">Sudah punya file dari QGIS atau ArcGIS?</p>
+    <h1>Impor atau periksa ZIP SHP</h1>
+    <p class="lead">Bawa batas lahan yang sudah ada ke editor, atau cek ZIP sebelum diunggah. Semuanya diproses di browser.</p>
+  </header>
+
+  <section class="panel">
+    <h2>Impor ke editor</h2>
+    <p class="note">Menerima GeoJSON (.geojson, .json) atau ZIP SHP. Hanya ring luar yang diambil; lubang diabaikan.</p>
+    <label for="import-file">Pilih berkas</label>
+    <input id="import-file" type="file" accept=".geojson,.json,.zip" />
+    <div class="actions">
+      <button id="btn-import" type="button">Impor</button>
+      <button id="btn-to-editor" type="button" disabled>Buka di editor</button>
+    </div>
+    <pre id="import-out">Belum ada berkas.</pre>
+  </section>
+
+  <section class="panel">
+    <h2>Cek ZIP SHP saya</h2>
+    <p class="note">
+      Pemeriksaan ini mengikuti aturan yang kami ketahui. Kebenarannya belum seluruhnya
+      diverifikasi terhadap juknis resmi, jadi hasil lulus tidak menjamin diterima portal.
+    </p>
+    <label for="check-file">Pilih ZIP SHP</label>
+    <input id="check-file" type="file" accept=".zip" />
+    <label for="check-profile">Aturan</label>
+    <select id="check-profile">
+      <option value="combined">Amdalnet + OSS RBA</option>
+      <option value="oss_rba">OSS RBA</option>
+      <option value="amdalnet">Amdalnet</option>
+    </select>
+    <div class="actions">
+      <button id="btn-check" type="button">Periksa</button>
+    </div>
+    <pre id="check-out">Belum ada berkas.</pre>
+  </section>
+
+  <script>
+    import initWasm, * as wasm from "../wasm/polify_wasm.js";
+
+    const STORAGE_KEY = "polify:import";
+    const importOut = document.getElementById("import-out") as HTMLPreElement;
+    const checkOut = document.getElementById("check-out") as HTMLPreElement;
+    const toEditorBtn = document.getElementById("btn-to-editor") as HTMLButtonElement;
+    const importFile = document.getElementById("import-file") as HTMLInputElement;
+    const checkFile = document.getElementById("check-file") as HTMLInputElement;
+
+    // Pesan error dari WASM berbentuk JSON {"code","message"}. Dibuat ramah untuk pengguna awam.
+    const friendly: Record<string, string> = {
+      GEOJSON: "Berkas GeoJSON tidak bisa dibaca. Pastikan isinya GeoJSON yang valid.",
+      NO_POLYGON: "Tidak ada poligon di dalam berkas.",
+      ZIP_READ: "ZIP tidak bisa dibaca. Pastikan berkasnya benar-benar ZIP.",
+      MISSING_SHP: "Di dalam ZIP tidak ada berkas .shp.",
+      SHP_READ: "Berkas .shp di dalam ZIP rusak atau bukan poligon.",
+    };
+    const errText = (err: unknown) => {
+      try {
+        const e = JSON.parse(String(err));
+        return friendly[e.code] ?? `${e.code}: ${e.message}`;
+      } catch {
+        return String(err);
+      }
+    };
+
+    const wasmReady = initWasm().then(() => wasm);
+
+    const isZip = (file: File) => file.name.toLowerCase().endsWith(".zip");
+
+    document.getElementById("btn-import")!.addEventListener("click", async () => {
+      const file = importFile.files?.[0];
+      if (!file) {
+        importOut.textContent = "Pilih berkas dulu.";
+        return;
+      }
+      try {
+        const w: any = await wasmReady;
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const text = isZip(file) ? w.import_shp_zip(bytes) : w.import_geojson(new TextDecoder().decode(bytes));
+        const result = JSON.parse(text);
+        const lines = [`${result.features.length} poligon ditemukan.`];
+        result.warnings.forEach((m: string) => lines.push(`Catatan: ${m}`));
+        if (result.features.length > 1) {
+          lines.push("Editor menampilkan poligon pertama. Poligon lain belum didukung.");
+        }
+        importOut.textContent = lines.join("\n");
+        // Simpan poligon pertama. Editor membacanya saat dibuka.
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(result.features[0]));
+        toEditorBtn.disabled = false;
+      } catch (err) {
+        importOut.textContent = errText(err);
+        toEditorBtn.disabled = true;
+      }
+    });
+
+    toEditorBtn.addEventListener("click", () => {
+      window.location.href = "/editor";
+    });
+
+    document.getElementById("btn-check")!.addEventListener("click", async () => {
+      const file = checkFile.files?.[0];
+      if (!file) {
+        checkOut.textContent = "Pilih ZIP dulu.";
+        return;
+      }
+      try {
+        const w: any = await wasmReady;
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const profile = (document.getElementById("check-profile") as HTMLSelectElement).value;
+        const report = JSON.parse(w.check_zip(bytes, profile, undefined));
+        const head = report.ok ? "LOLOS pemeriksaan untuk aturan ini." : "ADA MASALAH.";
+        const issues = report.issues.map((i: any) => `[${i.severity}] ${i.message}`);
+        const files = `Berkas dalam ZIP: ${report.files.join(", ")}`;
+        checkOut.className = report.ok ? "msg-ok" : "msg-err";
+        checkOut.textContent = [head, files, ...issues].join("\n");
+      } catch (err) {
+        checkOut.className = "msg-err";
+        checkOut.textContent = errText(err);
+      }
+    });
+  </script>
+
+  <style>
+    .page-head { margin-bottom: 8px; }
+    .page-head h1 { font-size: clamp(1.8rem, 4.2vw, 2.5rem); max-width: 24ch; }
+    .panel { margin-top: 24px; padding: 24px; }
+    .panel h2 { font-size: 1.3rem; margin-bottom: 4px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 14px; }
+    .actions button:disabled { box-shadow: none; }
+    input[type="file"] {
+      padding: 10px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    input[type="file"]::file-selector-button {
+      margin-right: 12px;
+      padding: 8px 14px;
+      border: 1px solid var(--brand);
+      border-radius: 8px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    pre { min-height: 3.2em; margin: 0; }
+    @media (max-width: 639px) {
+      .panel { padding: 18px; }
+    }
+  </style>
+</Base>
