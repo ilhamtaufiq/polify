@@ -1,0 +1,53 @@
+---
+interface Props {
+  /** Teks pesan awal yang terisi otomatis di WhatsApp. */
+  message?: string;
+}
+
+const { message = "Halo, saya ingin konsultasi pengurusan perizinan berusaha di Kabupaten Cianjur." } = Astro.props;
+
+// Nomor WhatsApp dalam format internasional tanpa spasi, tanda hubung, atau tanda plus.
+const waNumber = "6285722224769";
+const waDisplay = "+62 857-2222-4769";
+const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+---
+
+<section class="promo" aria-labelledby="promo-title">
+  <p class="promo-eyebrow">Perizinan berusaha · Kabupaten Cianjur</p>
+  <h2 id="promo-title">Mau urus perizinan berusaha di Cianjur?</h2>
+  <p>
+    Konsultasi perizinan berusaha di Kabupaten Cianjur, termasuk persiapan SHP lahan untuk
+    OSS RBA dan Amdalnet. Hubungi kami langsung lewat WhatsApp.
+  </p>
+  <div class="promo-actions">
+    <a class="cta promo-wa" href={waLink} target="_blank" rel="noopener noreferrer">
+      Chat WhatsApp {waDisplay}
+    </a>
+  </div>
+</section>
+
+<style>
+  .promo {
+    margin-top: 48px;
+    padding: 26px 24px;
+    border-radius: var(--radius);
+    background: var(--brand-soft);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .promo-eyebrow {
+    margin: 0 0 6px;
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+  }
+  .promo h2 { margin: 0 0 8px; font-size: 1.4rem; }
+  .promo p { margin: 0; max-width: 60ch; }
+  .promo-actions { margin-top: 16px; }
+  .promo-wa { background: #25d366; border-color: #25d366; color: #0d1412; }
+  @media (min-width: 640px) {
+    .promo { padding: 32px 36px; }
+  }
+</style>

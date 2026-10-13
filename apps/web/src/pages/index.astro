@@ -1,6 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import Pricing from "../components/Pricing.astro";
+import PerizinanPromo from "../components/PerizinanPromo.astro";
 
 const description =
   "Buat file SHP polygon untuk OSS RBA dan Amdalnet dari peta, tanpa ArcGIS atau QGIS. Diperiksa otomatis, diproses di browser, dari Cianjur.";
@@ -190,6 +191,8 @@ const steps = [
     <p>Sudah punya file dari QGIS atau ArcGIS? Impor GeoJSON atau ZIP SHP, atau periksa ZIP yang sudah ada.</p>
     <a class="text-link" href="/impor">Buka Impor dan cek</a>
   </section>
+
+  <PerizinanPromo />
 
   <Pricing />
 
