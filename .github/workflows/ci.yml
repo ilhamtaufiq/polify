@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Tes polify-core
+        run: cargo test -p polify-core
+      - name: Build polify-wasm
+        run: cargo build -p polify-wasm --target wasm32-unknown-unknown --release
+
+  web:
+    needs: rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Pasang wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - name: Bangun paket WASM
+        working-directory: crates/polify-wasm
+        run: wasm-pack build --target web --release
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Pasang dependensi web
+        working-directory: apps/web
+        run: npm ci
+      - name: Build web
+        working-directory: apps/web
+        run: npm run build
